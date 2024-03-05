@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//Debug Diary: Bigger bush should get eaten twice, sprite? Timer.
 public class scrGrass : MonoBehaviour
 {
     
@@ -48,18 +49,22 @@ public class scrGrass : MonoBehaviour
         switch (currentState)
         {
             case GrassState.Growing:
+                eaten = false; //Let's reset eaten status
+                age = 0;
                 spriteRenderer.sprite = grass;
                 
                 ChangeScale(1f, 1f);
                 break;
             
             case GrassState.Dying:
+                eaten = false; //Let's reset eaten status
                 spriteRenderer.sprite = grass;
                 
                 ChangeScale(2f, 2f);
                 break;
             
             case GrassState.Dead:
+                eaten = false; //Let's reset eaten status
                 spriteRenderer.sprite = grassDead;
                 
                 ChangeScale(1.5f, 1.5f);
@@ -100,7 +105,8 @@ public class scrGrass : MonoBehaviour
     void dead()
     {
         age += Time.deltaTime;
-        if (age >= decomposeAge)
+        
+        if (eaten || (age >= decomposeAge))
         {
             Destroy(gameObject);
         }

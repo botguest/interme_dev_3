@@ -1,6 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class scrSheep : MonoBehaviour
 {
@@ -13,11 +16,14 @@ public class scrSheep : MonoBehaviour
         Died
     }
 
+    public float hungerDecomposeThreshold;
     public float hungerDeadThreshold;
     public float hungerSearchFoodThreshold;
     public Sprite sheep;
     public Sprite sheepDead;
     public float moveSpeed;
+    public float closestDistanceSheep; //chase trigger distance of sheep.
+    public float closestDistanceWolf; //chase trigger distance of wolf.
     
     private Vector3 moveDirection;
     private bool isMoving = false;
@@ -35,6 +41,7 @@ public class scrSheep : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     
     //Helper
+    #region Helper
     public void ChangeScale(float newXScale, float newYScale)
     {
         // Set the new scale of the GameObject
@@ -47,23 +54,23 @@ public class scrSheep : MonoBehaviour
         Vector3 screenPoint = Camera.main.WorldToViewportPoint(transform.position);
         bool isNearBoundary = false;
 
-        if (screenPoint.x < 0.1f)
+        if (screenPoint.x < 0.05f)
         {
             isNearBoundary = true;
             randomDirection = new Vector2(Mathf.Abs(randomDirection.x), randomDirection.y);
         }
-        else if (screenPoint.x > 0.9f)
+        else if (screenPoint.x > 0.95f)
         {
             isNearBoundary = true;
             randomDirection = new Vector2(-Mathf.Abs(randomDirection.x), randomDirection.y);
         }
 
-        if (screenPoint.y < 0.1f)
+        if (screenPoint.y < 0.05f)
         {
             isNearBoundary = true;
             randomDirection = new Vector2(randomDirection.x, Mathf.Abs(randomDirection.y));
         }
-        else if (screenPoint.y > 0.9f)
+        else if (screenPoint.y > 0.95f)
         {
             isNearBoundary = true;
             randomDirection = new Vector2(randomDirection.x, -Mathf.Abs(randomDirection.y));
@@ -74,6 +81,61 @@ public class scrSheep : MonoBehaviour
             timeSinceLastDirectionChange = directionChangeInterval; // Reset direction change timer
         }
     }
+
+    void CheckForEscapeBoundaries()
+    {
+        Vector3 screenPoint = Camera.main.WorldToViewportPoint(transform.position);
+        bool isNearBoundary = false;
+
+        if (screenPoint.x < 0.05f)
+        {
+            isNearBoundary = true;
+            moveDirection = new Vector2(Mathf.Abs(randomDirection.x), randomDirection.y);
+        }
+        else if (screenPoint.x > 0.95f)
+        {
+            isNearBoundary = true;
+            moveDirection = new Vector2(-Mathf.Abs(randomDirection.x), randomDirection.y);
+        }
+
+        if (screenPoint.y < 0.05f)
+        {
+            isNearBoundary = true;
+            moveDirection = new Vector2(randomDirection.x, Mathf.Abs(randomDirection.y));
+        }
+        else if (screenPoint.y > 0.95f)
+        {
+            isNearBoundary = true;
+            moveDirection = new Vector2(randomDirection.x, -Mathf.Abs(randomDirection.y));
+        }
+
+        if (isNearBoundary)
+        {
+            timeSinceLastDirectionChange = directionChangeInterval; // Reset direction change timer
+        }
+    }
+    
+    bool tooCloseToWolf()
+    {
+        GameObject[] wolfObjects = GameObject.FindGameObjectsWithTag("Wolf");
+        GameObject closestWolf = null;
+        float closestDistance = 100f; //Change this to adjust the trigger chase distance for sheep. To be swapped later with closestDistanceSheep
+        Vector3 currentPosition = transform.position;
+        
+        foreach (GameObject wolf in wolfObjects)
+        {
+            Vector3 directionToWolf = wolf.transform.position - currentPosition;
+            float d = directionToWolf.sqrMagnitude;
+            if (d < closestDistance) //the chase is on
+            {
+                closestWolf = wolf;
+                return true;
+            }
+        }
+
+        return false;
+    }
+    #endregion
     //Helper
     
     //State Switching
@@ -97,17 +159,17 @@ public class scrSheep : MonoBehaviour
             
             case SheepState.Idle:
                 spriteRenderer.sprite = sheep;
-                moveSpeed = 0.5f;
+                moveSpeed = 0.5f; //change move speed at state change.
                 break;
             
             case SheepState.FindFood:
                 spriteRenderer.sprite = sheep;
-                moveSpeed = 1f;
+                moveSpeed = 1f; //change move speed at state change.
                 break;
             
             case SheepState.Chased:
                 spriteRenderer.sprite = sheep;
-                
+                moveSpeed = 1.5f; //change move speed at state change.
                 break;
             
             case SheepState.Died:
@@ -120,6 +182,13 @@ public class scrSheep : MonoBehaviour
 
     void gotoGrass()
     {
+        //If too close, go to chase.
+        if (tooCloseToWolf())
+        {
+            ChangeState(SheepState.Chased);
+        }
+        //If too close, go to chase.
+        
         if (!isMoving)
         {
             // Calculate the target position at the center of the camera's view
@@ -149,6 +218,13 @@ public class scrSheep : MonoBehaviour
 
     void idle()
     {
+        //If too close, go to chase.
+        if (tooCloseToWolf())
+        {
+            ChangeState(SheepState.Chased);
+        }
+        //If too close, go to chase.
+        
         hungerness += Time.deltaTime;
         timeSinceLastDirectionChange += Time.deltaTime;
         
@@ -173,6 +249,13 @@ public class scrSheep : MonoBehaviour
 
     void findFood()
     {
+        //If too close, go to chase.
+        if (tooCloseToWolf())
+        {
+            ChangeState(SheepState.Chased);
+        }
+        //If too close, go to chase.
+        
         GameObject[] grassObjects = GameObject.FindGameObjectsWithTag("Grass"); // Ensure your prefGrass prefabs are tagged with "Grass"
         GameObject closestGrass = null;
         float closestDistance = Mathf.Infinity;
@@ -216,12 +299,71 @@ public class scrSheep : MonoBehaviour
 
     void chased()
     {
+        //check whether hungry enough
+        if (hungerness <= hungerSearchFoodThreshold)
+        {
+            if (!tooCloseToWolf())
+            {
+                ChangeState(SheepState.Idle);
+            }
+            
+            hungerness += Time.deltaTime;
+        } else if (hungerness >= hungerSearchFoodThreshold)
+        {
+            if (hungerness >= hungerDeadThreshold)
+            {
+                ChangeState(SheepState.Died);
+            }
+
+            if (!tooCloseToWolf())
+            {
+                ChangeState(SheepState.FindFood);
+            }
+            hungerness += Time.deltaTime;
+            //might be of use later.
+        }
+        //check whether hungry enough
         
+        //now that it's too close, we go into chase.
+        GameObject[] wolfObjects = GameObject.FindGameObjectsWithTag("Wolf");
+        GameObject closestWolf = null;
+        float closestDistance = Mathf.Infinity; 
+        Vector3 currentPosition = transform.position;
+        
+        foreach (GameObject wolf in wolfObjects)
+        {
+            Vector3 directionToWolf = wolf.transform.position - currentPosition;
+            float d = directionToWolf.sqrMagnitude;
+            if (d < closestDistance) 
+            {
+                closestDistance = d;
+                closestWolf = wolf;
+            }
+        }
+
+        if (closestWolf != null)
+        {
+            moveDirection = (closestWolf.transform.position - currentPosition).normalized;
+            CheckForEscapeBoundaries();
+            transform.position += new Vector3(moveDirection.x, moveDirection.y, 0) * moveSpeed * Time.deltaTime;
+            
+            // Check for overlap with the grass (assuming both have Collider components)
+            if (Vector3.Distance(transform.position, closestWolf.transform.position) < 0.5f) // Adjust the distance as needed
+            {
+                // Set the eaten flag on the sheep
+                hungerness = hungerDeadThreshold;
+                ChangeState(SheepState.Died);
+            }
+        }
     }
 
     void died()
     {
-        
+        hungerness += Time.deltaTime;
+        if (hungerness >= hungerDecomposeThreshold)
+        {
+            Destroy(gameObject);
+        }
     }
     
     

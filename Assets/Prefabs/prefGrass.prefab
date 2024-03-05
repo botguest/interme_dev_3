@@ -97,9 +97,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 719036a308d0d4c95894b1645a6da1c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  matureAge: 4
-  deadAge: 8
-  decomposeAge: 10
+  matureAge: 2
+  deadAge: 15
+  decomposeAge: 20
   eaten: 0
   grass: {fileID: 21300000, guid: 0991d7fd48b214ab3aaeab5bd91c3c9f, type: 3}
   grassDead: {fileID: 21300000, guid: fab214030d7954183847d6dfefe9d058, type: 3}
