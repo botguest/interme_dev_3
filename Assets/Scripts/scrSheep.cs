@@ -24,6 +24,7 @@ public class scrSheep : MonoBehaviour
     public float moveSpeed;
     public float closestDistanceSheep; //chase trigger distance of sheep.
     public float closestDistanceWolf; //chase trigger distance of wolf.
+    public bool dead;
     
     private Vector3 moveDirection;
     private bool isMoving = false;
@@ -42,6 +43,7 @@ public class scrSheep : MonoBehaviour
     
     //Helper
     #region Helper
+    
     public void ChangeScale(float newXScale, float newYScale)
     {
         // Set the new scale of the GameObject
@@ -52,81 +54,81 @@ public class scrSheep : MonoBehaviour
     void CheckForBoundaries()
     {
         Vector3 screenPoint = Camera.main.WorldToViewportPoint(transform.position);
-        bool isNearBoundary = false;
+        Vector3 newDirection = randomDirection;
 
         if (screenPoint.x < 0.05f)
         {
-            isNearBoundary = true;
-            randomDirection = new Vector2(Mathf.Abs(randomDirection.x), randomDirection.y);
+            newDirection = new Vector2(1, Random.Range(-1f, 1f)); // Move right
         }
         else if (screenPoint.x > 0.95f)
         {
-            isNearBoundary = true;
-            randomDirection = new Vector2(-Mathf.Abs(randomDirection.x), randomDirection.y);
+            newDirection = new Vector2(-1, Random.Range(-1f, 1f)); // Move left
         }
 
         if (screenPoint.y < 0.05f)
         {
-            isNearBoundary = true;
-            randomDirection = new Vector2(randomDirection.x, Mathf.Abs(randomDirection.y));
+            newDirection = new Vector2(Random.Range(-1f, 1f), 1); // Move up
         }
         else if (screenPoint.y > 0.95f)
         {
-            isNearBoundary = true;
-            randomDirection = new Vector2(randomDirection.x, -Mathf.Abs(randomDirection.y));
+            newDirection = new Vector2(Random.Range(-1f, 1f), -1); // Move down
         }
 
-        if (isNearBoundary)
-        {
-            timeSinceLastDirectionChange = directionChangeInterval; // Reset direction change timer
-        }
+        randomDirection = newDirection.normalized;
+        timeSinceLastDirectionChange = 0; // Reset direction change timer to immediately adjust direction
+
+        // Clamp position as a fail-safe to prevent going out of bounds
+        Vector3 position = transform.position;
+        position.x = Mathf.Clamp(position.x, Camera.main.ViewportToWorldPoint(new Vector3(0.05f, 0, 0)).x, Camera.main.ViewportToWorldPoint(new Vector3(0.95f, 0, 0)).x);
+        position.y = Mathf.Clamp(position.y, Camera.main.ViewportToWorldPoint(new Vector3(0, 0.05f, 0)).y, Camera.main.ViewportToWorldPoint(new Vector3(0, 0.95f, 0)).y);
+        transform.position = position;
     }
 
     void CheckForEscapeBoundaries()
     {
         Vector3 screenPoint = Camera.main.WorldToViewportPoint(transform.position);
-        bool isNearBoundary = false;
+        Vector3 newDirection = moveDirection;
 
         if (screenPoint.x < 0.05f)
         {
-            isNearBoundary = true;
-            moveDirection = new Vector2(Mathf.Abs(randomDirection.x), randomDirection.y);
+            newDirection = new Vector2(1, Random.Range(-1f, 1f)); // Move right
         }
         else if (screenPoint.x > 0.95f)
         {
-            isNearBoundary = true;
-            moveDirection = new Vector2(-Mathf.Abs(randomDirection.x), randomDirection.y);
+            newDirection = new Vector2(-1, Random.Range(-1f, 1f)); // Move left
         }
 
         if (screenPoint.y < 0.05f)
         {
-            isNearBoundary = true;
-            moveDirection = new Vector2(randomDirection.x, Mathf.Abs(randomDirection.y));
+            newDirection = new Vector2(Random.Range(-1f, 1f), 1); // Move up
         }
         else if (screenPoint.y > 0.95f)
         {
-            isNearBoundary = true;
-            moveDirection = new Vector2(randomDirection.x, -Mathf.Abs(randomDirection.y));
+            newDirection = new Vector2(Random.Range(-1f, 1f), -1); // Move down
         }
 
-        if (isNearBoundary)
-        {
-            timeSinceLastDirectionChange = directionChangeInterval; // Reset direction change timer
-        }
+        moveDirection = newDirection.normalized;
+        timeSinceLastDirectionChange = 0; // Reset direction change timer to immediately adjust direction
+
+        // Clamp position as a fail-safe to prevent going out of bounds
+        Vector3 position = transform.position;
+        position.x = Mathf.Clamp(position.x, Camera.main.ViewportToWorldPoint(new Vector3(0.05f, 0, 0)).x, Camera.main.ViewportToWorldPoint(new Vector3(0.95f, 0, 0)).x);
+        position.y = Mathf.Clamp(position.y, Camera.main.ViewportToWorldPoint(new Vector3(0, 0.05f, 0)).y, Camera.main.ViewportToWorldPoint(new Vector3(0, 0.95f, 0)).y);
+        transform.position = position;
     }
     
     bool tooCloseToWolf()
     {
         GameObject[] wolfObjects = GameObject.FindGameObjectsWithTag("Wolf");
         GameObject closestWolf = null;
-        float closestDistance = 100f; //Change this to adjust the trigger chase distance for sheep. To be swapped later with closestDistanceSheep
+        float closestDistance = 12f; //Change this to adjust the trigger chase distance for sheep. To be swapped later with closestDistanceSheep
         Vector3 currentPosition = transform.position;
         
         foreach (GameObject wolf in wolfObjects)
         {
             Vector3 directionToWolf = wolf.transform.position - currentPosition;
             float d = directionToWolf.sqrMagnitude;
-            if (d < closestDistance) //the chase is on
+            if (d < closestDistance && !wolf.GetComponent<scrWolf>().dead) //the chase is on
             {
                 closestWolf = wolf;
                 return true;
@@ -159,22 +161,22 @@ public class scrSheep : MonoBehaviour
             
             case SheepState.Idle:
                 spriteRenderer.sprite = sheep;
-                moveSpeed = 0.5f; //change move speed at state change.
+                moveSpeed = 0.3f; //change move speed at state change.
                 break;
             
             case SheepState.FindFood:
                 spriteRenderer.sprite = sheep;
-                moveSpeed = 1f; //change move speed at state change.
+                moveSpeed = 0.7f; //change move speed at state change.
                 break;
             
             case SheepState.Chased:
                 spriteRenderer.sprite = sheep;
-                moveSpeed = 1.5f; //change move speed at state change.
+                moveSpeed = 0.9f; //change move speed at state change.
                 break;
             
             case SheepState.Died:
                 spriteRenderer.sprite = sheepDead;
-                
+                dead = true;
                 break;
         }
     }
@@ -344,8 +346,8 @@ public class scrSheep : MonoBehaviour
         if (closestWolf != null)
         {
             moveDirection = (closestWolf.transform.position - currentPosition).normalized;
+            transform.position += -(new Vector3(moveDirection.x, moveDirection.y, 0) * moveSpeed * Time.deltaTime);
             CheckForEscapeBoundaries();
-            transform.position += new Vector3(moveDirection.x, moveDirection.y, 0) * moveSpeed * Time.deltaTime;
             
             // Check for overlap with the grass (assuming both have Collider components)
             if (Vector3.Distance(transform.position, closestWolf.transform.position) < 0.5f) // Adjust the distance as needed

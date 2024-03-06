@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2030088547509999077}
   - component: {fileID: 5314212024556669244}
+  - component: {fileID: 3736381783130300301}
   m_Layer: 0
   m_Name: prefWolf
   m_TagString: Wolf
@@ -27,7 +28,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -84,3 +85,22 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &3736381783130300301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6310388281979071000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a06c540b04f5f431da1175b93728e2be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hungerDecomposeThreshold: 18
+  hungerDeadThreshold: 13
+  hungerSearchFoodThreshold: 10
+  wolf: {fileID: 21300000, guid: b5b16987c72a84429b1b1144da38b507, type: 3}
+  wolfDead: {fileID: 21300000, guid: 259a36f2242b54179a557c25e11b0562, type: 3}
+  moveSpeed: 1
+  dead: 0
